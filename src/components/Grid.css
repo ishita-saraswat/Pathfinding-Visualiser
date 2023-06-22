@@ -1,0 +1,24 @@
+.grid-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
+  
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(40, 1fr);
+    grid-gap: 1px;
+    background-color: #fff;
+  }
+  
+  .row {
+    display: flex;
+  }
+  
+  .cell {
+    width: 20px;
+    height: 20px;
+    background-color: #fefe;
+  }
+  

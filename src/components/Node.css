@@ -1,0 +1,22 @@
+.node {
+    display: inline-block;
+    width: 25px;
+    height: 25px;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    transition: background-color 0.3s ease;
+  }
+  
+  .node-start {
+    background-color: #51adcf;
+  }
+  
+  .node-end {
+    background-color: #ff6b6b;
+  }
+  
+  .node-wall {
+    background-color: #333;
+  }
+  
+  
