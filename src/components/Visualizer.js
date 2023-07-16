@@ -8,7 +8,7 @@ const Visualizer = () => {
   const [startNode, setStartNode] = useState(null);
   const [endNode, setEndNode] = useState(null);
   const isVisualizingRef = useRef(false);
-  const [initialGridSet, setInitialGridSet] = useState(false);
+  const [timeTaken, setTimeTaken] = useState(0);
 
   useEffect(() => {
     initializeGrid();
@@ -24,10 +24,8 @@ const Visualizer = () => {
       initialGrid.push(currentRow);
     }
     setGrid(initialGrid);
-    setInitialGridSet(true); 
   };
 
-  //node object
   const createNode = (col, row) => {
     return {
       col,
@@ -41,9 +39,14 @@ const Visualizer = () => {
     };
   };
 
-  //mouse events on the grid
+  const handleMouseUp = () => {
+    if (isVisualizingRef.current) return;
+    setMouseIsPressed(false);
+  };
+
   const handleMouseDown = (row, col) => {
     if (isVisualizingRef.current) return;
+
     if (grid[row][col].isStart) {
       setMouseIsPressed('start');
     } else if (grid[row][col].isEnd) {
@@ -57,31 +60,21 @@ const Visualizer = () => {
 
   const handleMouseEnter = (row, col) => {
     if (isVisualizingRef.current) return;
+
     if (!mouseIsPressed) return;
 
-    const newGrid = [...grid];
-    const node = newGrid[row][col];
-
     if (mouseIsPressed === 'start') {
-      const updatedGrid = getNewGridWithUpdatedStartNode(newGrid, row, col);
-      setGrid(updatedGrid);
+      const newGrid = getNewGridWithUpdatedStartNode(grid, row, col);
+      setGrid(newGrid);
     } else if (mouseIsPressed === 'end') {
-      const updatedGrid = getNewGridWithUpdatedEndNode(newGrid, row, col);
-      setGrid(updatedGrid);
-    } else if (mouseIsPressed === 'wall') {
-      if (initialGridSet && !node.isStart && !node.isEnd && !node.isWall) {
-        const updatedGrid = getNewGridWithWallToggled(newGrid, row, col);
-        setGrid(updatedGrid);
-      }
+      const newGrid = getNewGridWithUpdatedEndNode(grid, row, col);
+      setGrid(newGrid);
+    } else {
+      const newGrid = getNewGridWithUpdatedNode(grid, row, col);
+      setGrid(newGrid);
     }
   };
 
-  const handleMouseUp = () => {
-    if (isVisualizingRef.current) return;
-    setMouseIsPressed(false);
-  };
-
-  //Toggle
   const getNewGridWithWallToggled = (grid, row, col) => {
     const newGrid = [...grid];
     const node = newGrid[row][col];
@@ -93,7 +86,6 @@ const Visualizer = () => {
     return newGrid;
   };
 
-  //node properties based on mouse events
   const getNewGridWithUpdatedNode = (grid, row, col) => {
     const newGrid = [...grid];
     const node = newGrid[row][col];
@@ -104,9 +96,11 @@ const Visualizer = () => {
         ...node,
         isWall: !node.isWall,
       };
+      newGrid[row][col] = newNode;
+    } else {
+      // Handle other cases here if needed
     }
 
-    newGrid[row][col] = newNode;
     return newGrid;
   };
 
@@ -154,8 +148,7 @@ const Visualizer = () => {
     return newGrid;
   };
 
-  // Visualization
-  const visualizeAlgorithm = () => {
+  const visualizeAlgorithm = (algorithm) => {
     if (isVisualizingRef.current) return;
     if (!startNode || !endNode) {
       alert('Please select both start and end nodes.');
@@ -163,14 +156,28 @@ const Visualizer = () => {
     }
 
     isVisualizingRef.current = true;
-    const visitedNodesInOrder = dijkstra(grid, startNode, endNode);
-    const shortestPath = getShortestPath(endNode);
+    let visitedNodesInOrder = [];
+    let shortestPath = [];
+
+    if (algorithm === 'dijkstra') {
+      visitedNodesInOrder = dijkstra(grid, startNode, endNode);
+      shortestPath = getShortestPath(endNode);
+    } else if (algorithm === 'astar') {
+      visitedNodesInOrder = astar(grid, startNode, endNode);
+      shortestPath = getShortestPath(endNode);
+    } else if (algorithm === 'bfs') {
+      visitedNodesInOrder = bfs(grid, startNode, endNode);
+      shortestPath = getShortestPath(endNode);
+    } else if (algorithm === 'dfs') {
+      visitedNodesInOrder = dfs(grid, startNode, endNode);
+      shortestPath = getShortestPath(endNode);
+    }
+
     animateAlgorithm(visitedNodesInOrder, shortestPath);
   };
 
-  // Dijkstra
   const dijkstra = (grid, startNode, endNode) => {
-    const visitedNodes = [];
+    const visitedNodesInOrder = [];
     startNode.distance = 0;
     const unvisitedNodes = getAllNodes(grid);
 
@@ -179,17 +186,94 @@ const Visualizer = () => {
       const closestNode = unvisitedNodes.shift();
 
       if (closestNode.isWall) continue;
-      if (closestNode.distance === Infinity) return visitedNodes;
+      if (closestNode.distance === Infinity) break;
 
       closestNode.isVisited = true;
-      visitedNodes.push(closestNode);
+      visitedNodesInOrder.push(closestNode);
 
-      if (closestNode === endNode) return visitedNodes;
+      if (closestNode === endNode) break;
 
       updateUnvisitedNeighbors(closestNode, grid);
     }
+
+    return visitedNodesInOrder;
   };
 
+  const astar = (grid, startNode, endNode) => {
+    const visitedNodesInOrder = [];
+    startNode.distance = 0;
+    startNode.heuristic = calculateHeuristic(startNode, endNode);
+    const unvisitedNodes = getAllNodes(grid);
+  
+    while (unvisitedNodes.length) {
+      sortNodesByDistance(unvisitedNodes);
+      const closestNode = unvisitedNodes.shift();
+  
+      if (closestNode.isWall) continue;
+      if (closestNode.distance === Infinity) break;
+  
+      closestNode.isVisited = true;
+      visitedNodesInOrder.push(closestNode);
+  
+      if (closestNode === endNode) break;
+  
+      updateAStarUnvisitedNeighbors(closestNode, endNode, grid, unvisitedNodes);
+    }
+  
+    return visitedNodesInOrder;
+  };
+
+  const bfs = (grid, startNode, endNode) => {
+    const visitedNodesInOrder = [];
+    const queue = [];
+    queue.push(startNode);
+
+    while (queue.length) {
+      const currentNode = queue.shift();
+
+      if (currentNode.isWall) continue;
+      if (currentNode.isVisited) continue;
+
+      currentNode.isVisited = true;
+      visitedNodesInOrder.push(currentNode);
+
+      if (currentNode === endNode) break;
+
+      const neighbors = getNeighbors(currentNode, grid);
+      for (const neighbor of neighbors) {
+        neighbor.previousNode = currentNode;
+        queue.push(neighbor);
+      }
+    }
+
+    return visitedNodesInOrder;
+  };
+
+  const dfs = (grid, startNode, endNode) => {
+    const visitedNodesInOrder = [];
+    const stack = [];
+    stack.push(startNode);
+
+    while (stack.length) {
+      const currentNode = stack.pop();
+
+      if (currentNode.isWall) continue;
+      if (currentNode.isVisited) continue;
+
+      currentNode.isVisited = true;
+      visitedNodesInOrder.push(currentNode);
+
+      if (currentNode === endNode) break;
+
+      const neighbors = getNeighbors(currentNode, grid);
+      for (const neighbor of neighbors) {
+        neighbor.previousNode = currentNode;
+        stack.push(neighbor);
+      }
+    }
+
+    return visitedNodesInOrder;
+  };
 
   const getAllNodes = (grid) => {
     const nodes = [];
@@ -205,7 +289,13 @@ const Visualizer = () => {
     unvisitedNodes.sort((nodeA, nodeB) => nodeA.distance - nodeB.distance);
   };
 
-  //Update distances
+  const sortNodesByHeuristic = (unvisitedNodes) => {
+    unvisitedNodes.sort(
+      (nodeA, nodeB) =>
+        nodeA.distance + nodeA.heuristic - (nodeB.distance + nodeB.heuristic)
+    );
+  };
+
   const updateUnvisitedNeighbors = (node, grid) => {
     const neighbors = getNeighbors(node, grid);
     for (const neighbor of neighbors) {
@@ -214,7 +304,25 @@ const Visualizer = () => {
     }
   };
 
-  //neighbors
+  const updateAStarUnvisitedNeighbors = (node, endNode, grid, unvisitedNodes) => {
+    const neighbors = getNeighbors(node, grid);
+    for (const neighbor of neighbors) {
+      const distanceToNeighbor = node.distance + 1;
+      if (distanceToNeighbor < neighbor.distance) {
+        neighbor.distance = distanceToNeighbor;
+        neighbor.previousNode = node;
+        neighbor.heuristic = calculateHeuristic(neighbor, endNode);
+      }
+    }
+    sortNodesByHeuristic(unvisitedNodes);
+  };
+
+  const calculateHeuristic = (node, endNode) => {
+    const dx = Math.abs(node.col - endNode.col);
+    const dy = Math.abs(node.row - endNode.row);
+    return dx + dy;
+  };
+
   const getNeighbors = (node, grid) => {
     const { col, row } = node;
     const neighbors = [];
@@ -225,7 +333,6 @@ const Visualizer = () => {
     return neighbors.filter((neighbor) => !neighbor.isVisited);
   };
 
-  //shortest path from start to end node
   const getShortestPath = (endNode) => {
     const shortestPath = [];
     let currentNode = endNode;
@@ -236,21 +343,18 @@ const Visualizer = () => {
     return shortestPath;
   };
 
-  //Animation
   const animateAlgorithm = (visitedNodesInOrder, shortestPath) => {
-    for (let i = 0; i <= visitedNodesInOrder.length; i++) {
-      if (i === visitedNodesInOrder.length) {
-        setTimeout(() => {
-          animateShortestPath(shortestPath);
-        }, 10 * i);
-        return;
-      }
+    for (let i = 0; i < visitedNodesInOrder.length; i++) {
       setTimeout(() => {
         const node = visitedNodesInOrder[i];
         document.getElementById(`node-${node.row}-${node.col}`).className =
           'node node-visited';
       }, 10 * i);
     }
+
+    setTimeout(() => {
+      animateShortestPath(shortestPath);
+    }, 10 * visitedNodesInOrder.length);
   };
 
   const animateShortestPath = (shortestPath) => {
@@ -261,31 +365,18 @@ const Visualizer = () => {
           'node node-shortest-path';
       }, 50 * i);
     }
-    isVisualizingRef.current = false;
+
+    setTimeout(() => {
+      isVisualizingRef.current = false;
+      const timeElapsed = 50 * shortestPath.length;
+      setTimeTaken(timeElapsed);
+    }, 50 * shortestPath.length);
   };
 
-  // Clear the grid
-  /* const clearGrid = () => {
-    if (isVisualizingRef.current) return;
-    const newGrid = grid.map((row) =>
-      row.map((node) => ({
-        ...node,
-        distance: Infinity,
-        isVisited: false,
-        previousNode: null,
-        isShortestPath: false,
-        isStart: false, // Reset isStart flag
-        isEnd: false, // Reset isEnd flag
-      }))
-    );
-    setGrid(newGrid);
-    setStartNode(null); // Reset start node
-    setEndNode(null); // Reset end node
-  }; */
 
   return (
     <div className="visualizer">
-      <h1>Dijkstra's Shortest Path</h1> 
+      <h1>Pathfinding Visualizer</h1>
       <div className="button-container">
         <button
           className="visualizer-button"
@@ -305,10 +396,36 @@ const Visualizer = () => {
         >
           Add Walls
         </button>
-        <button className="visualizer-button" onClick={visualizeAlgorithm}>
-          Visualize Algorithm
+        <button
+          className="visualizer-button"
+          onClick={() => visualizeAlgorithm('dijkstra')}
+        >
+          Dijkstra's Algorithm
         </button>
+        <button
+          className="visualizer-button"
+          onClick={() => visualizeAlgorithm('astar')}
+        >
+          A* Search
+        </button>
+        <button
+          className="visualizer-button"
+          onClick={() => visualizeAlgorithm('bfs')}
+        >
+          Breadth-First Search
+        </button>
+        <button
+          className="visualizer-button"
+          onClick={() => visualizeAlgorithm('dfs')}
+        >
+          Depth-First Search
+        </button>
+        
       </div>
+      <div className="time-taken">
+  Time Taken: {timeTaken} ms
+</div>
+
       <div className="grid">
         {grid.map((row, rowIndex) => {
           return (
@@ -324,9 +441,9 @@ const Visualizer = () => {
                     isEnd={isEnd}
                     isWall={isWall}
                     mouseIsPressed={mouseIsPressed}
-                    onMouseDown={(row, col) => handleMouseDown(row, col)}
-                    onMouseEnter={(row, col) => handleMouseEnter(row, col)}
-                    onMouseUp={() => handleMouseUp()}
+                    onMouseDown={() => handleMouseDown(row, col)}
+                    onMouseEnter={() => handleMouseEnter(row, col)}
+                    onMouseUp={handleMouseUp}
                   />
                 );
               })}
@@ -342,3 +459,4 @@ const Visualizer = () => {
 };
 
 export default Visualizer;
+
