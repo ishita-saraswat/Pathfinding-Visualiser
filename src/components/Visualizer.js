@@ -204,22 +204,22 @@ const Visualizer = () => {
     startNode.distance = 0;
     startNode.heuristic = calculateHeuristic(startNode, endNode);
     const unvisitedNodes = getAllNodes(grid);
-  
+
     while (unvisitedNodes.length) {
       sortNodesByDistance(unvisitedNodes);
       const closestNode = unvisitedNodes.shift();
-  
+
       if (closestNode.isWall) continue;
       if (closestNode.distance === Infinity) break;
-  
+
       closestNode.isVisited = true;
       visitedNodesInOrder.push(closestNode);
-  
+
       if (closestNode === endNode) break;
-  
+
       updateAStarUnvisitedNeighbors(closestNode, endNode, grid, unvisitedNodes);
     }
-  
+
     return visitedNodesInOrder;
   };
 
