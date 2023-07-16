@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Node from './Node';
 import './Visualizer.css';
 
@@ -11,20 +11,20 @@ const Visualizer = () => {
   const [timeTaken, setTimeTaken] = useState(0);
 
   useEffect(() => {
-  initializeGrid();
-}, [initializeGrid]);
+    initializeGrid();
+  }, []);
 
-  const initializeGrid = useCallback(() => {
-  const initialGrid = [];
-  for (let row = 0; row < 50; row++) {
-    const currentRow = [];
-    for (let col = 0; col < 50; col++) {
-      currentRow.push(createNode(col, row));
+  const initializeGrid = () => {
+    const initialGrid = [];
+    for (let row = 0; row < 50; row++) {
+      const currentRow = [];
+      for (let col = 0; col < 50; col++) {
+        currentRow.push(createNode(col, row));
+      }
+      initialGrid.push(currentRow);
     }
-    initialGrid.push(currentRow);
-  }
-  setGrid(initialGrid);
-}, []);
+    setGrid(initialGrid);
+  };
 
   const createNode = (col, row) => {
     return {
