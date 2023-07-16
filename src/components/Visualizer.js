@@ -11,8 +11,8 @@ const Visualizer = () => {
   const [timeTaken, setTimeTaken] = useState(0);
 
   useEffect(() => {
-    initializeGrid();
-  }, []);
+  initializeGrid();
+}, [initializeGrid]);
 
   const initializeGrid = () => {
     const initialGrid = [];
