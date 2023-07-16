@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Node from './Node';
 import './Visualizer.css';
 
@@ -14,7 +14,7 @@ const Visualizer = () => {
     initializeGrid();
   }, []);
 
-  const initializeGrid = () => {
+  const initializeGrid = useCallback(() => {
     const initialGrid = [];
     for (let row = 0; row < 50; row++) {
       const currentRow = [];
@@ -24,7 +24,7 @@ const Visualizer = () => {
       initialGrid.push(currentRow);
     }
     setGrid(initialGrid);
-  };
+  }, []);
 
   const createNode = (col, row) => {
     return {
@@ -420,12 +420,10 @@ const Visualizer = () => {
         >
           Depth-First Search
         </button>
-        
       </div>
       <div className="time-taken">
-  Time Taken: {timeTaken} ms
-</div>
-
+        Time Taken: {timeTaken} ms
+      </div>
       <div className="grid">
         {grid.map((row, rowIndex) => {
           return (
@@ -459,4 +457,3 @@ const Visualizer = () => {
 };
 
 export default Visualizer;
-
