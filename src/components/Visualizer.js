@@ -14,17 +14,17 @@ const Visualizer = () => {
   initializeGrid();
 }, [initializeGrid]);
 
-  const initializeGrid = () => {
-    const initialGrid = [];
-    for (let row = 0; row < 50; row++) {
-      const currentRow = [];
-      for (let col = 0; col < 50; col++) {
-        currentRow.push(createNode(col, row));
-      }
-      initialGrid.push(currentRow);
+  const initializeGrid = useCallback(() => {
+  const initialGrid = [];
+  for (let row = 0; row < 50; row++) {
+    const currentRow = [];
+    for (let col = 0; col < 50; col++) {
+      currentRow.push(createNode(col, row));
     }
-    setGrid(initialGrid);
-  };
+    initialGrid.push(currentRow);
+  }
+  setGrid(initialGrid);
+}, []);
 
   const createNode = (col, row) => {
     return {
