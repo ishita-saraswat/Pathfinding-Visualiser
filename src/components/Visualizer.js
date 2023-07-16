@@ -10,10 +10,6 @@ const Visualizer = () => {
   const isVisualizingRef = useRef(false);
   const [timeTaken, setTimeTaken] = useState(0);
 
-  useEffect(() => {
-    initializeGrid();
-  }, []);
-
   const initializeGrid = useCallback(() => {
     const initialGrid = [];
     for (let row = 0; row < 50; row++) {
@@ -25,6 +21,10 @@ const Visualizer = () => {
     }
     setGrid(initialGrid);
   }, []);
+
+  useEffect(() => {
+    initializeGrid();
+  }, [initializeGrid]);
 
   const createNode = (col, row) => {
     return {
